@@ -1,0 +1,93 @@
+#include<stdio.h>
+#include<stdlib.h>
+#include<unistd.h>
+#include<sys/types.h>
+#include<string.h>
+#include<sys/wait.h>
+
+int main()
+{
+	int r_end=0,w_end=1;
+	int pipe1[2];
+	int pipe2[2];
+	char path_str[100];
+	
+	int pid;
+	
+	if(pipe(pipe1)==-1)
+	{
+		fprintf(stderr,"Pipe Failed");
+		return 1;
+	}
+	
+	if(pipe(pipe2)==-1)
+	{
+		fprintf(stderr,"Pipe Failed");
+		return 1;
+	}
+	
+	printf("Enter full path:");
+	scanf("%s",path_str);
+	
+	pid=fork();
+	if(pid>0) //parent process
+	{
+		char res_str[100];
+		
+		close(pipe1[r_end]);
+		
+		write(pipe1[w_end],path_str,strlen(path_str)+1);
+		close(pipe1[w_end]);
+		wait(NULL);
+		
+		close(pipe2[w_end]);
+		read(pipe2[r_end],res_str,100);
+		printf("***File content***\n%s",res_str);
+		close(pipe2[r_end]);
+	}
+	else if(pid==0) //child process
+	{
+
+		char path_str[100];
+		char buff[100];
+		char c;
+		int n=0;
+		close(pipe1[w_end]);
+		
+		read(pipe1[r_end],path_str,100);
+		
+		FILE *fp=fopen(path_str,"r");
+		
+		if(fp==NULL)
+		{
+			printf("Could not open file...\n");
+			return 1;
+		}
+		
+		while((c=fgetc(fp)) != EOF)
+			buff[n++]=c;
+			
+		buff[n]='\0';
+		
+		close(pipe2[r_end]);
+		
+		write(pipe2[w_end],buff,100);
+		close(pipe2[w_end]);
+			
+	}
+	return 0;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
